@@ -1,1 +1,2 @@
-image: ${artifacts.primary.image}
+image: <+artifacts.primary.image>  
+
