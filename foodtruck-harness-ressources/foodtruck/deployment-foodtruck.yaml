@@ -1,0 +1,71 @@
+{{- if .Values.dockercfg}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{.Values.name}}-dockercfg
+  annotations:
+    harness.io/skip-versioning: "true"
+data:
+  .dockercfg: {{.Values.dockercfg}}
+type: kubernetes.io/dockercfg
+---
+{{- end}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:  
+      containers:
+      - args: ["splunk-py-trace", "python3", "app.py"]
+        env:
+        - name: SPLUNK_OTEL_AGENT
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://$(SPLUNK_OTEL_AGENT):4317"
+        - name: OTEL_SERVICE_NAME
+          value: "$(NAMESPACE_NAME)-FoodTruck"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "deployment.environment=prod"
+        - name: DEBUG
+          value: "True"
+        image: {{.Values.image}}
+        imagePullPolicy: Always
+        name: foodtruck
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        ports:
+        - containerPort: 5000
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: {{.Values.name}}-dockercfg
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+spec:
+  ports:
+  - name: web
+    port: 5000
+    targetPort: 5000
+  selector:
+    app: web
+  type: LoadBalancer
