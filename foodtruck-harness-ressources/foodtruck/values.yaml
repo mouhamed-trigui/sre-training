@@ -1,4 +1,4 @@
 #image: ${artifact.metadata.image}
-#dockercfg: ${artifact.source.dockerconfig}
-image: <+artifacts.primary.image>  
-dockercfg: <+artifacts.primary.imagePullSecret> 
+dockercfg: ${artifact.source.dockerconfig}
+image: <+artifacts.primary.image>
+#dockercfg: <+artifacts.primary.imagePullSecret> 
